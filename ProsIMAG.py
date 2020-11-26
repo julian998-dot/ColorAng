@@ -11,57 +11,6 @@ import serial
 import glob
 
 
-
-# termination criteria
-criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-# prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
-objp = np.zeros((6*7,3), np.float32)
-objp[:,:2] = np.mgrid[0:7,0:6].T.reshape(-1,2)
-# Arrays to store object points and image points from all the images.
-objpoints = [] # 3d point in real world space
-imgpoints = [] # 2d points in image plane.
-images = glob.glob('*.jpg')
-for fname in images:
-    img = cv2.imread(fname)
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    # Find the chess board corners
-    ret, corners = cv2.findChessboardCorners(gray, (7,6),None)
-    # If found, add object points, image points (after refining them)
-    if ret == True:
-        objpoints.append(objp)
-        corners2 = cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
-        imgpoints.append(corners2)
-        # Draw and display the corners
-        img = cv2.drawChessboardCorners(img, (7,6), corners2,ret)
-        cv2.imshow('img',img)
-        cv2.waitKey(500)
-cv2.destroyAllWindows()
-ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
-mtx1=mtx
-dist1=dist
-img = cv2.imread('WIN_20201029_19_34_24_Pro.jpg')
-h,  w = img.shape[:2]
-newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
-# undistort
-newcameramtx1=newcameramtx
-roi1=roi
-dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
-# crop the image
-x,y,w,h = roi
-dst = dst[y:y+h, x:x+w]
-cv2.imshow('calibressult.png',img)
-
-Ps = serial.Serial(
-       port='COM2',
-       baudrate=9600,
-       parity=serial.PARITY_ODD,
-       stopbits=serial.STOPBITS_TWO,
-       bytesize=serial.SEVENBITS
-)
-try:
-    Ps.open()
-except:
-    print("Error")
 global th1
 global th2
 th1=0
@@ -130,17 +79,11 @@ while True:
     cv2.putText(maskBluevis, texto2, (10,20), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(255, 255, 255), 1)
     _, ctns2, _ = cv2.findContours(bordes2, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(frame, ctns2, -1, (0,0,255), 2)
-    cv2.imshow('frame', frame)
+    #cv2.imshow('frame', frame)
     cv2.imshow('maskRed', maskRed)
     cv2.imshow('maskRedvis', maskRedvis)
     cv2.imshow('maskBlue', maskBlue)
     cv2.imshow('maskBluevis', maskBluevis)
-    #############Envio de datos
-    Ps.write(str(th1).encode())
-    Ps.write(','.encode())
-    Ps.write(str(th2).encode())
-    Ps.write("\r\n".encode())
-    ##########################
     if cv2.waitKey(1) & 0xFF == ord('s'):
       break
 cap.release()
